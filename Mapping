@@ -1,0 +1,78 @@
+
+from gpiozero import DigitalOutputDevice, DistanceSensor
+from rpi_hardware_pwm import HardwarePWM
+from time import sleep
+import csv
+
+# Initialize the ultrasonic sensors
+leftSensor = DistanceSensor(echo=24, trigger=23)  # Left side sensor for measuring the wall
+frontSensor = DistanceSensor(echo=25, trigger=22)   # Front sensor for stop condition
+rightSensor = DistanceSensor(echo=5, trigger=6)    # Right side sensor for measuring the opposite wall
+
+# Motor direction control setup
+left_motor_direction = DigitalOutputDevice(17)  # Example GPIO pin
+right_motor_direction = DigitalOutputDevice(27) # Example GPIO pin
+
+# Initialize hardware PWM for motors
+pwm1 = HardwarePWM(pwm_channel=0, hz=20000, chip=2)  # Adjust chip and channel as per your setup
+pwm2 = HardwarePWM(pwm_channel=1, hz=20000, chip=2)
+
+# CSV file setup
+csv_file = 'motor_distance_data_two_sensors.csv'
+header = ['Current Position (cm)', 'Distance To Wall (cm)', 'Distance To Opposite Wall (cm)']
+
+def setup_pwm():
+    pwm1.start(0)  # Start with 0% duty cycle
+    pwm2.start(0)  # Start with 0% duty cycle
+
+def set_motor_speed(left_speed, right_speed):
+    # Adjust duty cycle for speed control
+    pwm1.change_duty_cycle(left_speed)
+    pwm2.change_duty_cycle(right_speed)
+
+def drive_motors(direction, duration, speed):
+    # Set motor direction (True for forward, False for backward)
+    left_motor_direction.value = not direction
+    right_motor_direction.value = not direction
+
+    # Set motor speed
+    set_motor_speed(speed, speed)
+
+    # Drive for the specified duration
+    sleep(duration)
+
+    # Stop motors
+    set_motor_speed(0, 0)
+
+def measure_distance(sensor):
+    return sensor.distance * 100  # Convert to centimeters
+
+def main():
+    setup_pwm()
+    current_position = 0  # Dummy variable for now
+
+    with open(csv_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        
+        while measure_distance(frontSensor) > 152.4:  # Continue until a wall is detected within 5 feet (152.4 cm) on the left
+            # Drive forward for 2 seconds at 50% speed
+            drive_motors(direction=True, duration=2, speed=50)
+            
+            for _ in range(5):  # Read 5 data points at each position
+                distance_to_wall_left = measure_distance(leftSensor)
+                distance_to_wall_right = measure_distance(rightSensor)
+                print(f"Distance to left wall: {distance_to_wall_left:.2f} cm, Distance to right wall: {distance_to_wall_right:.2f} cm")
+
+                # Update current position (dummy logic for demonstration)
+                current_position += 10  # Assume 10 cm per interval for demonstration
+                writer.writerow([current_position, distance_to_wall_left, distance_to_wall_right])
+            
+            sleep(1)  # Wait for a second before moving to the next position
+
+    # Cleanup PWM
+    pwm1.stop()
+    pwm2.stop()
+
+if __name__ == "__main__":
+    main()
