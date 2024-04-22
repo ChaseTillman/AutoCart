@@ -19,7 +19,7 @@ left_motor_direction = OutputDevice(18, initial_value=False)  # GPIO 18 for left
 sensor = DistanceSensor(echo=23, trigger=24)
 
 # Target distance from the wall (in meters)
-target_distance = 1.0
+target_distance = 0.5
 
 # PID coefficients
 Kp = 1.0  # Proportional gain
@@ -32,7 +32,6 @@ last_error = 0
 
 # Base speed for the left motor
 left_motor_base_speed = 35  # Constant speed for the left motor
-right_motor_base_speed = 60
 
 # Function to control motor speeds
 def control_motors(left_speed, right_speed):
@@ -60,8 +59,8 @@ def update_speed(current_distance):
     # PID output
     output = Kp * error + Ki * integral + Kd * derivative
 
-    # Calculate new right motor speed
-    right_motor_speed = max(min(right_motor_base_speed + output, 100), 0)
+    # Calculate new right motor speed - invert the output to correct the direction
+    right_motor_speed = max(min(left_motor_base_speed - output, 100), 0)
 
     return left_motor_base_speed, right_motor_speed
 
