@@ -19,7 +19,7 @@ left_motor_direction = OutputDevice(18, initial_value=False)  # GPIO 18 for left
 sensor = DistanceSensor(echo=23, trigger=24)
 
 # Target distance from the wall (in meters)
-target_distance = 0.8
+target_distance = 1.0
 
 # PID coefficients
 Kp = 1.0  # Proportional gain
@@ -30,17 +30,18 @@ Kd = 0.05  # Derivative gain
 integral = 0
 last_error = 0
 
-# Base speed for both motors
-base_speed = 50
+# Base speed for the left motor
+left_motor_base_speed = 35  # Constant speed for the left motor
+right_motor_base_speed = 60
 
 # Function to control motor speeds
 def control_motors(left_speed, right_speed):
-    left_motor_direction.off()
+    left_motor_direction.off()  # Set forward direction
     right_motor_direction.off()
-    pwm_left_motor.change_duty_cycle(abs(left_speed))
-    pwm_right_motor.change_duty_cycle(abs(right_speed))
+    pwm_left_motor.change_duty_cycle(left_speed)
+    pwm_right_motor.change_duty_cycle(right_speed)
 
-# Function to update speed using PID control
+# Function to update right motor speed using PID control
 def update_speed(current_distance):
     global integral, last_error
 
@@ -59,11 +60,10 @@ def update_speed(current_distance):
     # PID output
     output = Kp * error + Ki * integral + Kd * derivative
 
-    # Calculate new motor speeds
-    left_motor_speed = max(min(base_speed + output, 100), 0)
-    right_motor_speed = max(min(base_speed - output, 100), 0)
+    # Calculate new right motor speed
+    right_motor_speed = max(min(right_motor_base_speed + output, 100), 0)
 
-    return left_motor_speed, right_motor_speed
+    return left_motor_base_speed, right_motor_speed
 
 def main():
     pwm_left_motor.start(0)
