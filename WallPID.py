@@ -13,7 +13,7 @@ pwm_left_motor = HardwarePWM(pwm_channel=1, hz=20000)  # Left motor on channel 1
 
 # GPIO pins for direction control, forward is 'off'
 right_motor_direction = OutputDevice(17, initial_value=True)  # GPIO 17 for right motor direction
-left_motor_direction = OutputDevice(18, initial_value=True)  # GPIO 18 for left motor direction
+left_motor_direction = OutputDevice(27, initial_value=True)  # GPIO 18 for left motor direction
 
 # Initialize the ultrasonic sensor
 sensor = DistanceSensor(echo=23, trigger=24)
