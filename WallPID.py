@@ -21,6 +21,8 @@ sensor = DistanceSensor(echo=23, trigger=24)
 # Target distance from the wall (in meters)
 target_distance = 0.35
 
+post_turn_pid_duration = 10
+
 # PID coefficients
 Kp = 4.0  # Proportional gain
 Ki = 0.1  # Integral gain
@@ -35,8 +37,8 @@ left_motor_base_speed = 35  # Constant speed for the left motor
 left_motor_base_speed = 36  # Constant speed for the right motor
 # Function to control motor speeds
 def control_motors(left_speed, right_speed):
-    left_motor_direction.off()  # Set forward direction
-    right_motor_direction.off()
+    left_motor_direction.on()  # Set forward direction
+    right_motor_direction.on()
     pwm_left_motor.change_duty_cycle(left_speed)
     pwm_right_motor.change_duty_cycle(right_speed)
 
@@ -65,20 +67,38 @@ def update_speed(current_distance):
 
     # Calculate new right motor speed - invert the output to correct the direction
     right_motor_speed = max(min(right_motor_base_speed - output, 100), 20)
-    left_motor_speed = max(min(left_motor_base_speed - output, 100), 0)
+    left_motor_speed = max(min(left_motor_base_speed + output, 100), 0)
   
     return left_motor_speed, right_motor_speed
+
+def turn_right():
+    control_motors(70, 25)
+    time.sleep(5)
+    control_motors(35, 35)
+    return
 
 def main():
     pwm_left_motor.start(0)
     pwm_right_motor.start(0)
-
+    
+    turn_performed = False
+    start_time = time.time()
+    
     try:
         while True:
             current_distance = sensor.distance
             left_speed, right_speed = update_speed(current_distance)
             control_motors(left_speed, right_speed)
 
+            if current_distance == 1.0 and not turn_performed:
+                    turn_right()
+                    turn_performed = True
+                    start_time = time.time()  # Reset the start time after the turn
+    
+            if turn_performed and (time.time() - start_time > post_turn_pid_duration):
+                print("PID control duration elapsed. Stopping the cart.")
+                break  # Stop the cart after the PID control duration
+        
             # Check for emergency stop
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
