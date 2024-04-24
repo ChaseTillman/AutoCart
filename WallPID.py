@@ -17,6 +17,7 @@ left_motor_direction = OutputDevice(27, initial_value=True)  # GPIO 18 for left 
 
 # Initialize the ultrasonic sensor
 sensor = DistanceSensor(echo=23, trigger=24)
+obstacle_sensor = DistanceSensor(echo=25, trigger=8)  # Additional sensor for obstacle detection
 
 # Target distance from the wall (in meters)
 target_distance = 0.35
@@ -87,12 +88,16 @@ def main():
     try:
         while True:
             current_distance = sensor.distance
+            obstacle_distance = obstacle_sensor.distance
+
             left_speed, right_speed = update_speed(current_distance)
             control_motors(left_speed, right_speed)
 
             if current_distance == 1.0 and not turn_performed:
                     turn_right()
                     turn_performed = True
+                    integral = 0
+                    last_error = 0
                     start_time = time.time()  # Reset the start time after the turn
     
             if turn_performed and (time.time() - start_time > post_turn_pid_duration):
