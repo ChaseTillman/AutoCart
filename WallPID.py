@@ -12,8 +12,8 @@ pwm_right_motor = HardwarePWM(pwm_channel=0, hz=20000)  # Right motor on channel
 pwm_left_motor = HardwarePWM(pwm_channel=1, hz=20000)  # Left motor on channel 1
 
 # GPIO pins for direction control, forward is 'off'
-right_motor_direction = OutputDevice(17, initial_value=False)  # GPIO 17 for right motor direction
-left_motor_direction = OutputDevice(18, initial_value=False)  # GPIO 18 for left motor direction
+right_motor_direction = OutputDevice(17, initial_value=True)  # GPIO 17 for right motor direction
+left_motor_direction = OutputDevice(18, initial_value=True)  # GPIO 18 for left motor direction
 
 # Initialize the ultrasonic sensor
 sensor = DistanceSensor(echo=23, trigger=24)
@@ -43,7 +43,11 @@ def control_motors(left_speed, right_speed):
 # Function to update right motor speed using PID control
 def update_speed(current_distance):
     global integral, last_error
-
+    
+    if current_distance == 1.0:
+        turn_right()
+        return left_motor_base_speed, left_motor_base_speed  # Reset to base speed after turn
+    
     # Calculate the error
     error = target_distance - current_distance
 
